@@ -30,6 +30,17 @@ jobs:
         with:
           terraform_wrapper: false
 
+      - name: Terraform backend variables
+        working-directory: ./terraform
+        run: |
+          cat > backend.tfvars <<EOF
+          access_key = "${{ secrets.ACCESS_KEY }}"
+          secret_key = "${{ secrets.SECRET_KEY }}"
+          region = "${{ secrets.AWS_REGION }}"
+          bucket = "${{ format('slidev-remote-{0}', github.ref_name) }}"
+          dynamodb_table = "${{ format('slidev-remote-{0}', github.ref_name) }}"
+          EOF
+
       - name: Terraform init
         working-directory: ./terraform
         run: terraform init
