@@ -31,9 +31,11 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform init
+        working-directory: ./terraform
         run: terraform init
 
       - name: Terraform variables
+        working-directory: ./terraform
         run: |
           cat > pipeline.tfvars <<EOF
           access_key = "${{ secrets.ACCESS_KEY }}"
@@ -42,7 +44,9 @@ jobs:
           bucket_name = "${{ format('slidev-bucket-{0}', github.ref_name) }}"
           origin_id = "${{ format('slidev-origin-{0}', github.ref_name) }}"
           EOF
+
       - name: Terraform apply
+        working-directory: ./terraform
         run: terraform apply -auto-approve -var-file=pipeline.tfvars
 
       - name: Get Cloudfront distribution and bucket name
