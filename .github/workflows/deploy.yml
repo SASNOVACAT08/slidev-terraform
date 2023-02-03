@@ -51,6 +51,7 @@ jobs:
 
       - name: Get Cloudfront distribution and bucket name
         id: terraform_outputs
+        working-directory: ./terraform
         run: |
           CLOUDFRONT_DISTRIBUTION="$(terraform output cloudfront_distribution | tr -d '"')"
           BUCKET_NAME="$(terraform output bucket_name | tr -d '"')"
