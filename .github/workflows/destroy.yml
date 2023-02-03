@@ -61,12 +61,6 @@ jobs:
           aws s3api delete-objects --bucket ${{ format('slidev-remote-{0}', github.event.ref) }} \
           --delete "$(aws s3api list-object-versions --bucket ${{ format('slidev-remote-{0}', github.event.ref) }} --query='{Objects: Versions[].{Key:Key,VersionId:VersionId}}')" \
           --no-cli-page
-      
-      - name: Clean Markers Remote
-        run: |
-          aws s3api delete-objects --bucket ${{ format('slidev-remote-{0}', github.event.ref) }} \
-          --delete "$(aws s3api list-object-versions --bucket ${{ format('slidev-remote-{0}', github.event.ref) }} --query='{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}')" \
-          --no-cli-page
 
       - name: Destroy Bucket Remote
         run: aws s3 rb s3://${{ format('slidev-remote-{0}', github.event.ref) }} --force
