@@ -1,0 +1,73 @@
+name: Deploy
+description: Deploy to AWS
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: 'Install PNPM'
+        uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 7.18.1
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform variables
+        run: |
+          cat > pipeline.tfvars <<EOF
+          access_key = "${{ secrets.ACCESS_KEY }}"
+          secret_key = "${{ secrets.SECRET_KEY }}"
+          aws_region = "${{ secrets.AWS_REGION }}"
+          bucket_name = "${{ format('slidev-bucket-{0}', github.ref_name) }}"
+          origin_id = "${{ format('slidev-origin-{0}', github.ref_name) }}"
+          EOF
+      - name: Terraform apply
+        run: terraform apply -auto-approve -var-file=pipeline.tfvars
+
+      - name: Get Cloudfront distribution and bucket name
+        id: terraform_outputs
+        run: |
+          CLOUDFRONT_DISTRIBUTION="$(terraform output cloudfront_distribution | tr -d '"')"
+          BUCKET_NAME="$(terraform output bucket_name | tr -d '"')"
+          echo "CLOUDFRONT_DISTRIBUTION=$CLOUDFRONT_DISTRIBUTION" >> $GITHUB_OUTPUT
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.SECRET_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy static site to S3 bucket
+        run: aws s3 sync ./dist/ s3://${{ steps.terraform_outputs.outputs.BUCKET_NAME }} --delete
+
+      - name: Invalidate CloudFront
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ steps.terraform_outputs.outputs.CLOUDFRONT_DISTRIBUTION }}
+          PATHS: "/*"
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_KEY }}

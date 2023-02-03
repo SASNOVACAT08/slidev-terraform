@@ -1,0 +1,8 @@
+{
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-action.json": [
+      "file:///Users/ruben/Documents/Projets/Node/slidev-terraform/.github/workflows/create-branch.yml",
+      "file:///Users/ruben/Documents/Projets/Node/slidev-terraform/.github/workflows/deploy.yml"
+    ]
+  }
+}
