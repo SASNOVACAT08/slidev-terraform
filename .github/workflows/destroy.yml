@@ -1,0 +1,60 @@
+name: Destroy
+
+on:
+  delete
+
+jobs:
+  remote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.SECRET_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Clean Bucket
+        run: aws s3 rm s3://${{ format('slidev-bucket-{0}', github.ref_name) }} --recursive
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+      
+      - name: Terraform backend variables
+        working-directory: ./terraform
+        run: |
+          cat > backend.tfvars <<EOF
+          access_key = "${{ secrets.ACCESS_KEY }}"
+          secret_key = "${{ secrets.SECRET_KEY }}"
+          region = "${{ secrets.AWS_REGION }}"
+          bucket = "${{ format('slidev-remote-{0}', github.ref_name) }}"
+          dynamodb_table = "${{ format('slidev-remote-{0}', github.ref_name) }}"
+          EOF
+
+      - name: Terraform init
+        working-directory: ./terraform
+        run: terraform init -backend-config=backend.tfvars
+
+      - name: Terraform variables
+        working-directory: ./terraform
+        run: |
+          cat > pipeline.tfvars <<EOF
+          access_key = "${{ secrets.ACCESS_KEY }}"
+          secret_key = "${{ secrets.SECRET_KEY }}"
+          aws_region = "${{ secrets.AWS_REGION }}"
+          bucket_name = "${{ format('slidev-bucket-{0}', github.ref_name) }}"
+          origin_id = "${{ format('slidev-origin-{0}', github.ref_name) }}"
+          EOF
+
+      - name: Terraform apply
+        working-directory: ./terraform
+        run: terraform destroy -auto-approve -var-file=pipeline.tfvars
+
+      - name: Destroy remote
+        run: aws s3 rb s3://${{ format('slidev-remote-{0}', github.ref_name) }} --force
