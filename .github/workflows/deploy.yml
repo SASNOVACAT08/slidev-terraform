@@ -37,13 +37,17 @@ jobs:
           access_key = "${{ secrets.ACCESS_KEY }}"
           secret_key = "${{ secrets.SECRET_KEY }}"
           region = "${{ secrets.AWS_REGION }}"
-          bucket = "${{ format('slidev-remote-{0}', github.ref_name) }}"
-          dynamodb_table = "${{ format('slidev-remote-{0}', github.ref_name) }}"
+          bucket = "slidev-remote"
+          dynamodb_table = "slidev-remote"
           EOF
 
       - name: Terraform init
         working-directory: ./terraform
         run: terraform init -backend-config=backend.tfvars
+
+      - name: Terraform workspace
+        working-directory: ./terraform
+        run: terraform workspace select ${{ github.ref_name }}
 
       - name: Terraform variables
         working-directory: ./terraform

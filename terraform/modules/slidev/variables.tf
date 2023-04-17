@@ -14,11 +14,9 @@ variable "secret_key" {
 }
 
 variable "bucket_name" {
-  type      = string
-  nullable  = true
+  type = string
 }
 
 variable "origin_id" {
-  type      = string
-  nullable  = true
+  type = string
 }

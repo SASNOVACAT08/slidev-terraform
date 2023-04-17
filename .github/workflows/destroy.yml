@@ -41,6 +41,10 @@ jobs:
         working-directory: ./terraform
         run: terraform init -backend-config=backend.tfvars
 
+      - name: Terraform workspace select
+        working-directory: ./terraform
+        run: terraform workspace select ${{ github.event.ref }}
+
       - name: Terraform variables
         working-directory: ./terraform
         run: |
@@ -56,14 +60,6 @@ jobs:
         working-directory: ./terraform
         run: terraform destroy -auto-approve -var-file=pipeline.tfvars
 
-      - name: Clean Version Remote
-        run: |
-          aws s3api delete-objects --bucket ${{ format('slidev-remote-{0}', github.event.ref) }} \
-          --delete "$(aws s3api list-object-versions --bucket ${{ format('slidev-remote-{0}', github.event.ref) }} --query='{Objects: Versions[].{Key:Key,VersionId:VersionId}}')" \
-          --no-cli-page
-
-      - name: Destroy Bucket Remote
-        run: aws s3 rb s3://${{ format('slidev-remote-{0}', github.event.ref) }} --force
-
-      - name: Destroy Dynamo Remote
-        run: aws dynamodb delete-table --table-name ${{ format('slidev-remote-{0}', github.event.ref) }}
+      - name: Terraform delete workspace
+        working-directory: ./terraform
+        run: terraform workspace select default && terraform workspace delete ${{ github.event.ref }}

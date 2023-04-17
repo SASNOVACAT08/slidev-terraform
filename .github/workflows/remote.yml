@@ -4,28 +4,61 @@ on:
   create
 
 jobs:
+  workspace:
+    if: github.ref_name != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform backend variables
+        working-directory: ./terraform
+        run: |
+          cat > backend.tfvars <<EOF
+          access_key = "${{ secrets.ACCESS_KEY }}"
+          secret_key = "${{ secrets.SECRET_KEY }}"
+          region = "${{ secrets.AWS_REGION }}"
+          bucket = "slidev-remote"
+          dynamodb_table = "slidev-remote"
+          EOF
+  
+      - name: Terraform init
+        working-directory: ./terraform
+        run: terraform init -backend-config=backend.tfvars
+
+      - name: Terraform workspace
+        working-directory: ./terraform
+        run: terraform workspace new ${{ github.ref_name }}
+      
   remote:
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+      
       - name: Terraform init
-        working-directory: ./terraform/remote
+        working-directory: ./terraform/modules/remote
         run: terraform init
 
       - name: Terraform variables
-        working-directory: ./terraform/remote
+        working-directory: ./terraform/modules/remote
         run: |
           cat > pipeline.tfvars <<EOF
           access_key = "${{ secrets.ACCESS_KEY }}"
           secret_key = "${{ secrets.SECRET_KEY }}"
           aws_region = "${{ secrets.AWS_REGION }}"
-          bucket_name = "${{ format('slidev-remote-{0}', github.ref_name) }}"
-          dynamodb_name = "${{ format('slidev-remote-{0}', github.ref_name) }}"
+          remote_name = "slidev-remote"
           EOF
 
       - name: Terraform apply
-        working-directory: ./terraform/remote
+        working-directory: ./terraform/modules/remote
         run: terraform apply -auto-approve -var-file=pipeline.tfvars

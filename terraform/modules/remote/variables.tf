@@ -13,12 +13,7 @@ variable "secret_key" {
   type      = string
 }
 
-variable "bucket_name" {
+variable "remote_name" {
+  sensitive = false
   type      = string
-  nullable  = true
-}
-
-variable "origin_id" {
-  type      = string
-  nullable  = true
 }
