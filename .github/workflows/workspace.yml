@@ -1,0 +1,32 @@
+name: Create worspace
+
+on:
+  create
+
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform backend variables
+        working-directory: ./terraform
+        run: |
+          cat > backend.tfvars <<EOF
+          access_key = "${{ secrets.ACCESS_KEY }}"
+          secret_key = "${{ secrets.SECRET_KEY }}"
+          region = "${{ secrets.AWS_REGION }}"
+          bucket = "slidev-remote"
+          dynamodb_table = "slidev-remote"
+          EOF
+  
+      - name: Terraform init
+        working-directory: ./terraform
+        run: terraform init -backend-config=backend.tfvars
+
+      - name: Terraform workspace
+        working-directory: ./terraform
+        run: terraform workspace new ${{ github.ref_name }}
