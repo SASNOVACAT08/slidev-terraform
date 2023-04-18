@@ -5,5 +5,5 @@ module "slidev" {
   access_key = var.access_key
   secret_key = var.secret_key
   bucket_name = var.bucket_name
-  origin_id = var.origin_id
+  origin_id = var.origin_id 
 }
