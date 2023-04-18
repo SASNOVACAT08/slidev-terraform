@@ -68,8 +68,8 @@ jobs:
         id: terraform_outputs
         working-directory: ./terraform
         run: |
-          CLOUDFRONT_DISTRIBUTION="$(terraform output cloudfront_distribution | tr -d '"')"
-          BUCKET_NAME="$(terraform output bucket_name | tr -d '"')"
+          CLOUDFRONT_DISTRIBUTION="$(terraform output modules.slidev.cloudfront_distribution | tr -d '"')"
+          BUCKET_NAME="$(terraform output module.slidev.bucket_name | tr -d '"')"
           echo "CLOUDFRONT_DISTRIBUTION=$CLOUDFRONT_DISTRIBUTION" >> $GITHUB_OUTPUT
           echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_OUTPUT
 
